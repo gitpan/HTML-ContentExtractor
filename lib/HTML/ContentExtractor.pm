@@ -6,11 +6,11 @@ HTML::ContentExtractor - extract the main content from a web page by analysising
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 =head1 SYNOPSIS
 
@@ -60,6 +60,8 @@ Constructs a new C<HTML::ContentExtractor> object. The optional
 
 =item $e->table_tags(@tags);
 
+=item $e->table_tags(\@tags);
+
 This is used to get/set the table tags array. The tags are used as the
 container tags.
 
@@ -67,12 +69,16 @@ container tags.
 
 =item $e->ignore_tags(@tags);
 
+=item $e->ignore_tags(\@tags);
+
 This is used to get/set the ignore tags array. The elements of such
 tags will be removed.
 
 =item $e->spam_words();
 
 =item $e->spam_words(@strings);
+
+=item $e->spam_words(\@strings);
 
 This is used to get/set the spam words list. The elements have such
 string will be removed.
@@ -233,20 +239,22 @@ sub extract{
     my $self=shift;
     my $url=shift;
     my $HTML=shift;
-        
-    $HTML=PreprocessForFragmentIdentifiedPage($url,$HTML);             
-    remove_crap($HTML);
+
+    $self->{tree}->delete if($self->{tree});
+    
+    $HTML=_PreprocessForFragmentIdentifiedPage($url,$HTML);             
+    _remove_crap($HTML);
     
     $self->{url}=$url;
     $self->{tree} = HTML::TreeBuilder->new();
     $self->{tree} ->parse($HTML);
-    $self->{link_count} = how_many_links($self->{tree});
-    $self->{is_index}=check_if_index($self->{tree});
-    $self->Heuristic_Remove($self->{tree});
-    $self->Table_Remove($self->{tree});
+    $self->{link_count} = _how_many_links($self->{tree});
+    $self->{is_index}= _check_if_index($self->{tree});
+    $self->_Heuristic_Remove($self->{tree});
+    $self->_Table_Remove($self->{tree});
 }
 
-sub is_index{
+sub _is_index{
     return $_[0]->{is_index};
 }
 
@@ -264,7 +272,7 @@ sub as_html{
 
 sub as_text{
     my $self=shift;
-    my $output = to_text($self->{tree});
+    my $output = _to_text($self->{tree});
     $output =~ s/[\n\r] +/\n/sg;
     $output =~ s/[\n\r]+/\n/sg;
     $output =~ s/ +/ /sg;
@@ -273,17 +281,17 @@ sub as_text{
     return $output;
 }
 
-sub links_count{
+sub _link_count{
     return $_[0]->{link_count};
 }
 
-sub check_if_index{
+sub _check_if_index{
     my $node=shift;
     
-    my $num_links=how_many_links($node);
-    my $txt=nonlink_words($node);
+    my $num_links=_how_many_links($node);
+    my $txt=_nonlink_words($node);
         
-    my $num_words = count_words_num($txt);
+    my $num_words = _count_words_num($txt);
         
     my $ratio=1;
     $ratio = $num_links/$num_words unless $num_words==0;
@@ -294,11 +302,11 @@ sub check_if_index{
     }
 }
 
-sub remove_crap{
+sub _remove_crap{
     $_[0] =~ s/&nbsp;/ /isg;
 }
 
-sub Table_Remove{
+sub _Table_Remove{
     my $self=shift;
     my $node=shift;
     return if not ref $node;             # not an element node
@@ -307,15 +315,15 @@ sub Table_Remove{
 
     my @nodes = $node->content_list(); # depth first recursive travesel
     foreach my $child (@nodes){
-        $self->Table_Remove( $child );
+        $self->_Table_Remove( $child );
     }
     
     if($self->{table_tags}->{$tag}){
         
-        my $num_links=how_many_links($node);
-        my $txt=nonlink_words($node);
+        my $num_links=_how_many_links($node);
+        my $txt=_nonlink_words($node);
         
-        my $num_words = count_words_num($txt);
+        my $num_words = _count_words_num($txt);
         
         my $ratio=1;
         $ratio = $num_links/$num_words unless $num_words==0;
@@ -343,14 +351,14 @@ sub Table_Remove{
     }
 }
 
-sub how_many_links{
+sub _how_many_links{
     my $node=shift;
     my $links_r = $node->extract_links();
     my $num_links = scalar(@$links_r);
     return $num_links;
 }
 
-sub nonlink_words{
+sub _nonlink_words{
     my $node=shift;
     if(not ref $node){
         my $text = $node;
@@ -368,19 +376,19 @@ sub nonlink_words{
     my @nodes = $node->content_list(); # breadth first travesel
     my $sum_text="";
     foreach $node (@nodes){
-        $sum_text .= nonlink_words( $node );
+        $sum_text .= _nonlink_words( $node );
     }
     return $sum_text;
 }
 
-sub Heuristic_Remove{
+sub _Heuristic_Remove{
     my $self=shift;
     my $node=shift;
     return if not ref $node;             # not an element node
     
     my @nodes = $node->content_list();   # depth first recursive travesel
     foreach my $child (@nodes){
-        $self->Heuristic_Remove( $child );
+        $self->_Heuristic_Remove( $child );
     }
     
     if($self->{ignore_tags}->{$node->tag} ){       # ignore the tags defined in ignore_tags
@@ -393,7 +401,7 @@ sub Heuristic_Remove{
     }
 }
 
-sub to_text{
+sub _to_text{
     my $node = shift;
     if(not ref $node){
         return $node;
@@ -402,12 +410,12 @@ sub to_text{
     my @nodes = $node->content_list();  #breadth firth travesel
     my $text="";
     foreach my $child (@nodes){
-        $text .= to_text($child)."\n";
+        $text .= _to_text($child)."\n";
     }
     return $text;
 }
 
-sub count_words_num{
+sub _count_words_num{
     my $text = shift;
 
     $text =~ s/([\x21-\x7e]+)/ $1 /g;
@@ -420,7 +428,7 @@ sub count_words_num{
 
 # input is the url and HTML
 # output is the processed HTML
-sub PreprocessForFragmentIdentifiedPage{
+sub _PreprocessForFragmentIdentifiedPage{
     my $url=shift;
     my $HTML=shift;
     if($url!~/\#/){        

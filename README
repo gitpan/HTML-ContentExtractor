@@ -1,15 +1,10 @@
 HTML-ContentExtractor
 
-The README is used to introduce the module and provide instructions on
-how to install the module, any machine dependencies it may have (for
-example C compilers and installed libraries) and any other information
-that should be provided before the module is installed.
+version 0.02
 
-A README file is required for CPAN modules since CPAN extracts the README
-file from a module distribution so that people browsing the archive
-can use it get an idea of the modules uses. It is usually a good idea
-to provide version information here so that people can decide whether
-fixes for the module are worth downloading.
+Web pages often contain clutter (such as ads, unnecessary images and extraneous links) around the body of an article that distracts a user from actual content. This module is used to reduce the noise content in web pages and thus identify the content rich regions.
+
+A web page is first parsed by an HTML parser, which corrects the markup and creates a DOM (Document Object Model) tree. By using a depth-first traversal to navigate the DOM tree, noise nodes are identified and removed, thus the main content is extracted. Some useless nodes (script, style, etc.) are removed; the container nodes (table, div, etc.) which have high link/text ratio (higher than threshold) are removed; (link/text ratio is the ratio of the number of links and non-linked words.) The nodes contain any string in the predefined spam string list are removed.
 
 INSTALLATION
 

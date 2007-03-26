@@ -9,8 +9,8 @@ WriteMakefile(
     ABSTRACT_FROM       => 'lib/HTML/ContentExtractor.pm',
     PL_FILES            => {},
     PREREQ_PM => {
-        'Test::More' => 0,
-        'HTML::TreeBuilder' => 1
+        'Test::More' => 0.64,
+        'HTML::TreeBuilder' => 3.13
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'HTML-ContentExtractor-*' },
