@@ -10,7 +10,8 @@ WriteMakefile(
     PL_FILES            => {},
     PREREQ_PM => {
         'Test::More' => 0.64,
-        'HTML::TreeBuilder' => 3.13
+        'HTML::TreeBuilder' => 3.13,
+        'HTML::TableExtract' => 2.10
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'HTML-ContentExtractor-*' },

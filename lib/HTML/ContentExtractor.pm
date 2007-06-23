@@ -6,11 +6,11 @@ HTML::ContentExtractor - extract the main content from a web page by analysising
 
 =head1 VERSION
 
-Version 0.02
+Version 0.03
 
 =cut
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 =head1 SYNOPSIS
 
@@ -408,10 +408,28 @@ sub _to_text{
     }
     return '' if($node->tag eq 'head');
     my @nodes = $node->content_list();  #breadth firth travesel
-    my $text="";
-    foreach my $child (@nodes){
-        $text .= _to_text($child)."\n";
-    }
+		my $text = "";
+		foreach my $child (@nodes) {
+        if ( ref $child and $child->can('tag') and $child->tag() eq 'table' ) {
+            my $avail = eval { require HTML::TableExtract };
+            unless ($avail) {
+                $text .= _to_text($child) . "\n";
+                next;
+            }
+            my $table   = 'HTML::TableExtract'->new();
+            my $content = $child->as_HTML;
+            $table->parse($content);
+            foreach my $ts ( $table->tables ) {
+                foreach my $row ( $ts->rows ) {
+                    defined and do { s/\s+$//, s/^\s+// }
+                    for @$row;
+                    $text .= join( ', ', grep { defined } @$row ) . "\n";
+                }
+            }
+        }else {
+            $text .= _to_text($child) . "\n";
+        }
+		}
     return $text;
 }
 
